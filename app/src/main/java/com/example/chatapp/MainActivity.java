@@ -122,8 +122,56 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == RC_SIGN_IN) {
+            IdpResponse response = IdpResponse.fromResultIntent(data);
+
+            if (resultCode == RESULT_OK) {
+                // Successfully signed in
+                FirebaseUser user = mAuth.getInstance().getCurrentUser();
+                if (user != null) {
+                    Toast.makeText(this, user.getEmail(), Toast.LENGTH_SHORT).show();
+                }
+                // ...
+            } else {
+                if (response != null) {
+                    Toast.makeText(this, "Error " + response.getError(), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
+                }
+                // Sign in failed. If response is null the user canceled the
+                // sign-in flow using the back button. Otherwise check
+                // response.getError().getErrorCode() and handle the error.
+                // ...
+            }
+        }
+    }
+
     private void signOut() {
-        Intent intent = new Intent(this,RegisterActivity.class);
-        startActivity(intent);
+
+        AuthUI.getInstance()
+                .signOut(this)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            List<AuthUI.IdpConfig> providers = Arrays.asList(
+                                    new AuthUI.IdpConfig.EmailBuilder().build(),
+                                    new AuthUI.IdpConfig.GoogleBuilder().build());
+
+// Create and launch sign-in intent
+                            startActivityForResult(
+                                    AuthUI.getInstance()
+                                            .createSignInIntentBuilder()
+                                            .setAvailableProviders(providers)
+                                            .build(),
+                                    RC_SIGN_IN);
+                        }
+                    }
+                });
+
+
     }
 }
