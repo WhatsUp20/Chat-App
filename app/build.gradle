@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 30
-    buildToolsVersion "30.0.0"
+    buildToolsVersion "30.0.2"
 
     defaultConfig {
         applicationId "com.example.chatapp"
@@ -11,6 +11,11 @@ android {
         versionCode 1
         versionName "1.0"
         multiDexEnabled true
+
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_8
+            targetCompatibility JavaVersion.VERSION_1_8
+        }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -31,10 +36,19 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+
+    //ButterKnife
+    implementation 'com.jakewharton:butterknife:10.2.3'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.3'
+
     //Firebase
     implementation platform('com.google.firebase:firebase-bom:26.2.0')
     apply plugin: 'com.google.gms.google-services'
     implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.android.support:multidex:1.0.3'
+    implementation 'com.google.firebase:firebase-auth'
+
+    //FirebaseUI
+    implementation 'com.firebaseui:firebase-ui-auth:6.4.0'
 
 }

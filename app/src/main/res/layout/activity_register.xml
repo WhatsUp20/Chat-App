@@ -7,19 +7,19 @@
     tools:context=".RegisterActivity">
 
     <EditText
-        android:id="@+id/editTextTextEmail"
+        android:id="@+id/editTextTextEmaill"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:ems="10"
         android:hint="Введите свой email:"
         android:inputType="textEmailAddress"
-        app:layout_constraintBottom_toTopOf="@+id/editTextTextPassword"
+        app:layout_constraintBottom_toTopOf="@+id/editTextTextPasswordd"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <EditText
-        android:id="@+id/editTextTextPassword"
+        android:id="@+id/editTextTextPasswordd"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
@@ -35,6 +35,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
+        android:onClick="onClickRegister"
         android:text="Регистрация"
         app:layout_constraintBottom_toTopOf="@+id/textViewHaveAnAccount"
         app:layout_constraintEnd_toEndOf="parent"
