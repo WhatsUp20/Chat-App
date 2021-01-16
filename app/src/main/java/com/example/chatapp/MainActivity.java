@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 import com.example.chatapp.adapter.MessagesAdapter;
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.IdpResponse;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -30,7 +32,14 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,17 +52,23 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int RC_SIGN_IN = 100;
     private static final int RC_GET_IMAGE = 200;
+
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+    private FirebaseStorage storage;
+    private StorageReference storageRef;
 
     private RecyclerView recyclerViewMessages;
     private MessagesAdapter adapter;
 
     private String author;
 
-    @BindView(R.id.editTextMessage) EditText editTextMessage;
-    @BindView(R.id.imageViewSendMessage) ImageView imageViewSendMessage;
-    @BindView(R.id.imageViewAddImage) ImageView imageViewAddImage;
+    @BindView(R.id.editTextMessage)
+    EditText editTextMessage;
+    @BindView(R.id.imageViewSendMessage)
+    ImageView imageViewSendMessage;
+    @BindView(R.id.imageViewAddImage)
+    ImageView imageViewAddImage;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -77,28 +92,29 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
+
+        //получили доступ к хранилищу (создали на него ссылку)
+        storage = FirebaseStorage.getInstance();
+        //получили доступ к главной папке, в которой всё лежит
+        storageRef = storage.getReference();
+        //создали в этой главной папке папку для хранения изображений
+        StorageReference referenceToImages = storageRef.child("images");
+
         recyclerViewMessages = findViewById(R.id.recyclerViewMessages);
         adapter = new MessagesAdapter();
         recyclerViewMessages.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewMessages.setAdapter(adapter);
         author = "Андрей";
 
-        imageViewAddImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("image/jpg");
-                intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-                startActivityForResult(intent, RC_GET_IMAGE);
-            }
+        imageViewAddImage.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("image/jpg");
+            intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+            startActivityForResult(intent, RC_GET_IMAGE);
         });
 
-        imageViewSendMessage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendMessage();
-            }
-        });
+        imageViewSendMessage.setOnClickListener(v -> sendMessage());
+
         //проверяем существует ли пользователь, если нет, отправляем на активити авторизации
         if (mAuth.getCurrentUser() != null) {
             Toast.makeText(this, "Успешно", Toast.LENGTH_SHORT).show();
@@ -148,7 +164,31 @@ public class MainActivity extends AppCompatActivity {
             if (data != null) {
                 Uri uri = data.getData();
                 if (uri != null) {
-                    Toast.makeText(this, uri.toString(), Toast.LENGTH_SHORT).show();
+                    StorageReference referenceToImages = storageRef.child("images/" + uri.getLastPathSegment());
+                    referenceToImages.putFile(uri).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                        @Override
+                        public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                            if (!task.isSuccessful()) {
+                                throw task.getException();
+                            }
+                            // Continue with the task to get the download URL
+                            return referenceToImages.getDownloadUrl();
+                        }
+                    }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Uri> task) {
+                            if (task.isSuccessful()) {
+                                Uri downloadUri = task.getResult();
+                                if (downloadUri != null) {
+                                    Log.i("TestDownloadUri", downloadUri.toString());
+                                }
+                            } else {
+                                // Handle failures
+                                // ...
+                            }
+                        }
+                    });
+
                 }
             }
         }

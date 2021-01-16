@@ -51,6 +51,7 @@ dependencies {
     //FirebaseUI
     implementation 'com.firebaseui:firebase-ui-auth:6.4.0'
     implementation 'com.facebook.android:facebook-login:4.30.0'
-    //implementation 'com.twitter.sdk.android:twitter:2.3.0'
+    //Firebase Storage
+    implementation 'com.google.firebase:firebase-storage'
 
 }
