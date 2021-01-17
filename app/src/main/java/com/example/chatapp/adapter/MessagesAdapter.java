@@ -3,6 +3,7 @@ package com.example.chatapp.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -10,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.chatapp.Message;
 import com.example.chatapp.R;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,18 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
 
     @Override
     public void onBindViewHolder(@NonNull MessagesViewHolder holder, int position) {
-        holder.bind(messages.get(position));
+        Message message = messages.get(position);
+        String author = message.getAuthor();
+        String textOfMessage = message.getTextOfMessage();
+        String urlToImage = message.getImageUrl();
+        holder.textViewAuthor.setText(author);
+        if (textOfMessage != null && !textOfMessage.isEmpty()) {
+            holder.textViewTextOfMessage.setText(textOfMessage);
+            holder.imageViewImage.setVisibility(View.GONE);
+        } if (urlToImage != null && !urlToImage.isEmpty()) {
+            holder.imageViewImage.setVisibility(View.VISIBLE);
+            Picasso.get().load(urlToImage).into(holder.imageViewImage);
+        }
     }
 
     @Override
@@ -40,19 +53,17 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         return messages.size();
     }
 
-    class MessagesViewHolder extends RecyclerView.ViewHolder{
+    static class MessagesViewHolder extends RecyclerView.ViewHolder{
 
         TextView textViewAuthor;
         TextView textViewTextOfMessage;
+        ImageView imageViewImage;
 
         public MessagesViewHolder(@NonNull View itemView) {
             super(itemView);
             textViewAuthor = itemView.findViewById(R.id.textViewAuthor);
             textViewTextOfMessage = itemView.findViewById(R.id.textViewTextOfMessage);
-        }
-        void bind(Message message) {
-            textViewAuthor.setText(message.getAuthor());
-            textViewTextOfMessage.setText(message.getTextOfMessage());
+            imageViewImage = itemView.findViewById(R.id.imageViewImage);
         }
     }
 }

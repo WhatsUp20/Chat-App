@@ -3,6 +3,7 @@ package com.example.chatapp;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -35,16 +36,10 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import butterknife.BindString;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
@@ -113,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, RC_GET_IMAGE);
         });
 
-        imageViewSendMessage.setOnClickListener(v -> sendMessage());
+        imageViewSendMessage.setOnClickListener(v -> sendMessage(editTextMessage.getText().toString().trim(), null));
 
         //проверяем существует ли пользователь, если нет, отправляем на активити авторизации
         if (mAuth.getCurrentUser() != null) {
@@ -138,22 +133,22 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void sendMessage() {
-        String textOfMessage = editTextMessage.getText().toString().trim();
-        if (!textOfMessage.isEmpty()) {
-            recyclerViewMessages.smoothScrollToPosition(adapter.getItemCount() - 1);
-            db.collection("messages").add(new Message(author, textOfMessage, System.currentTimeMillis())).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                @Override
-                public void onSuccess(DocumentReference documentReference) {
-                    editTextMessage.setText("");
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    Toast.makeText(MainActivity.this, "Сообщение не отправлено " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+    private void sendMessage(String textOfMessage, String urlToImage) {
+        Message message = null;
+        if (!textOfMessage.isEmpty() && textOfMessage != null) {
+            message = new Message(author, textOfMessage, System.currentTimeMillis(), null);
+
+        } else if (urlToImage != null && !urlToImage.isEmpty()) {
+            message = new Message(author, null, System.currentTimeMillis(), urlToImage);
         }
+        db.collection("messages").add(message)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        editTextMessage.setText("");
+                        recyclerViewMessages.smoothScrollToPosition(adapter.getItemCount() - 1);
+                    }
+                });
     }
 
     @Override
@@ -180,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
                             if (task.isSuccessful()) {
                                 Uri downloadUri = task.getResult();
                                 if (downloadUri != null) {
-                                    Log.i("TestDownloadUri", downloadUri.toString());
+                                    sendMessage(null, downloadUri.toString());
                                 }
                             } else {
                                 // Handle failures
