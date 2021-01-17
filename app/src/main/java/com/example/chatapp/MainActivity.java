@@ -8,8 +8,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -56,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerViewMessages;
     private MessagesAdapter adapter;
 
-    private String author;
+    private SharedPreferences preferences;
 
     @BindView(R.id.editTextMessage)
     EditText editTextMessage;
@@ -85,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        preferences = PreferenceManager.getDefaultSharedPreferences(this);
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
@@ -96,10 +99,9 @@ public class MainActivity extends AppCompatActivity {
         StorageReference referenceToImages = storageRef.child("images");
 
         recyclerViewMessages = findViewById(R.id.recyclerViewMessages);
-        adapter = new MessagesAdapter();
+        adapter = new MessagesAdapter(this);
         recyclerViewMessages.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewMessages.setAdapter(adapter);
-        author = "Андрей";
 
         imageViewAddImage.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -112,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
         //проверяем существует ли пользователь, если нет, отправляем на активити авторизации
         if (mAuth.getCurrentUser() != null) {
-            Toast.makeText(this, "Успешно", Toast.LENGTH_SHORT).show();
+            preferences.edit().putString("author", mAuth.getCurrentUser().getEmail()).apply();
         } else {
             signOut();
         }
@@ -135,20 +137,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendMessage(String textOfMessage, String urlToImage) {
         Message message = null;
-        if (!textOfMessage.isEmpty() && textOfMessage != null) {
+        String author = preferences.getString("author","Anonim");
+        if (!textOfMessage.isEmpty()) {
             message = new Message(author, textOfMessage, System.currentTimeMillis(), null);
 
         } else if (urlToImage != null && !urlToImage.isEmpty()) {
             message = new Message(author, null, System.currentTimeMillis(), urlToImage);
         }
-        db.collection("messages").add(message)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        editTextMessage.setText("");
-                        recyclerViewMessages.smoothScrollToPosition(adapter.getItemCount() - 1);
-                    }
-                });
+        if (message != null) {
+            db.collection("messages").add(message)
+                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                        @Override
+                        public void onSuccess(DocumentReference documentReference) {
+                            editTextMessage.setText("");
+                            recyclerViewMessages.smoothScrollToPosition(adapter.getItemCount() - 1);
+                        }
+                    });
+        } else {
+            Toast.makeText(this, "Пустое сообщение", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -196,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
                 FirebaseUser user = mAuth.getInstance().getCurrentUser();
                 if (user != null) {
                     Toast.makeText(this, user.getEmail(), Toast.LENGTH_SHORT).show();
-                    author = user.getEmail();
+                    preferences.edit().putString("author", user.getEmail()).apply();
                 }
                 // ...
             } else {

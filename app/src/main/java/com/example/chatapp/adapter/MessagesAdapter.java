@@ -1,5 +1,7 @@
 package com.example.chatapp.adapter;
 
+import android.content.Context;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +20,16 @@ import java.util.List;
 
 public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.MessagesViewHolder> {
 
-    List<Message> messages = new ArrayList<>();
+    private static final int TYPE_MY_MESSAGE = 0;
+    private static final int TYPE_OTHER_MESSAGE = 1;
+
+    List<Message> messages;
+    private Context context;
+
+    public MessagesAdapter(Context context) {
+        messages = new ArrayList<>();
+        this.context = context;
+    }
 
     public void setMessages(List<Message> messages) {
         this.messages = messages;
@@ -28,8 +39,25 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
     @NonNull
     @Override
     public MessagesViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_item_message, parent, false);
+        View view;
+        if (viewType == TYPE_MY_MESSAGE) {
+            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_item_my_message, parent, false);
+        } else {
+            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_item_other_message, parent, false);
+        }
+
         return new MessagesViewHolder(view);
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        Message message = messages.get(position);
+        String author = message.getAuthor();
+        if (author != null && author.equals(PreferenceManager.getDefaultSharedPreferences(context).getString("author", "Anonim"))) {
+            return TYPE_MY_MESSAGE;
+        } else {
+            return TYPE_OTHER_MESSAGE;
+        }
     }
 
     @Override
@@ -38,12 +66,19 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         String author = message.getAuthor();
         String textOfMessage = message.getTextOfMessage();
         String urlToImage = message.getImageUrl();
+        if (urlToImage == null && textOfMessage.isEmpty()) {
+            holder.imageViewImage.setVisibility(View.GONE);
+        } else {
+            holder.imageViewImage.setVisibility(View.VISIBLE);
+        }
         holder.textViewAuthor.setText(author);
         if (textOfMessage != null && !textOfMessage.isEmpty()) {
+            holder.textViewTextOfMessage.setVisibility(View.VISIBLE);
             holder.textViewTextOfMessage.setText(textOfMessage);
-            holder.imageViewImage.setVisibility(View.GONE);
-        } if (urlToImage != null && !urlToImage.isEmpty()) {
-            holder.imageViewImage.setVisibility(View.VISIBLE);
+        } else {
+            holder.textViewTextOfMessage.setVisibility(View.GONE);
+        }
+        if (urlToImage != null && !urlToImage.isEmpty()) {
             Picasso.get().load(urlToImage).into(holder.imageViewImage);
         }
     }
@@ -53,7 +88,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         return messages.size();
     }
 
-    static class MessagesViewHolder extends RecyclerView.ViewHolder{
+    static class MessagesViewHolder extends RecyclerView.ViewHolder {
 
         TextView textViewAuthor;
         TextView textViewTextOfMessage;
